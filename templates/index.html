@@ -1,8 +1,0 @@
-{% extends "base.html" %}
-{% block title %}儀表板｜Gate Quant Scanner{% endblock %}
-{% block content %}
-<section class="hero"><div><p class="eyebrow">Gate USDT PERPETUAL</p><h1>量化找幣與可追溯排名</h1><p>只使用已收線 K 線與官方資料；資料不足時明確顯示，不為湊滿十名降低標準。</p></div><a class="button" href="/replay">開始歷史重播</a></section>
-<section class="grid metrics"><div><small>最後掃描</small><strong>{{ latest.finished_at if latest else '尚未掃描' }}</strong></div><div><small>合格標的</small><strong>{{ latest.successful_count if latest else 0 }}</strong></div><div><small>資料模式</small><strong>/api/status</strong></div><div><small>Discord</small><strong>選用</strong></div></section>
-<section class="panel trading-panel"><div class="panel-head"><h2>自動下單與持倉管理</h2><span id="trading-status" class="status-pill">讀取中…</span></div><p class="muted">暫停只停止新建倉，既有持倉的止損、止盈與移動管理仍會持續執行。</p><div class="controls"><label class="token-field">管理 Token<input id="admin-token" type="password" autocomplete="off" placeholder="Bearer token"></label><button class="button danger" id="pause-trading" type="button">暫停新下單</button><button class="button success" id="resume-trading" type="button">恢復新下單</button></div><p id="trading-message" class="muted"></p><div id="positions-summary" class="muted">持倉載入中…</div></section>
-<section class="panel"><div class="panel-head"><h2>綜合前十</h2><a href="/rankings">查看完整排名</a></div><div id="ranking-cards" class="cards"><p class="muted">載入中…</p></div></section>
-{% endblock %}
