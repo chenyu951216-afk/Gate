@@ -1,0 +1,33 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      DATABASE_URL: postgresql+asyncpg://scanner:scanner@postgres:5432/scanner
+      MANUAL_SCAN_TOKEN: local-admin-token
+      ADMIN_BEARER_TOKEN: local-admin-token
+      SCHEDULER_ENABLED: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: scanner
+      POSTGRES_PASSWORD: scanner
+      POSTGRES_DB: scanner
+    ports:
+      - "5432:5432"
+    volumes:
+      - scanner-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scanner -d scanner"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  scanner-postgres:
+
