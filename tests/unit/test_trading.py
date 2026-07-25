@@ -323,6 +323,73 @@ async def test_scan_refresh_replaces_old_stop_only_after_new_stop_is_visible():
 
 
 @pytest.mark.asyncio
+async def test_scan_recalculates_held_coin_that_fell_out_of_qualified_rankings():
+    settings = Settings(_env_file=None, auto_order_enabled=True)
+    rest = FakeRest()
+    repo = FakeRepository()
+    service = TradingService(SimpleNamespace(rest=rest), repo, settings)
+    first = await service.process_scan({"rankings": {"combined": [_candidate()]}})
+    assert first["orders"][0]["status"] == "submitted"
+
+    refreshed = _candidate()
+    refreshed["ranking_score"] = 40
+    refreshed["metrics"]["15m"] = {
+        "atr": 1000,
+        "recent_low": 99800,
+        "recent_high": 101000,
+    }
+    second = await service.process_scan(
+        {
+            "rankings": {"combined": []},
+            "_scan_analysis": {"BTC_USDT": refreshed},
+        }
+    )
+    assert second["position_updates"][0]["scan_source"] == "scan_analysis_not_qualified"
+    assert second["position_updates"][0]["scan_recalculated"] is True
+    record = await repo.get_managed_position("BTC_USDT:long")
+    assert record["plan"]["scan_signal_status"] == "same_direction_not_qualified"
+    assert record["plan"]["scan_missing_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_scan_tp_does_not_chase_unfilled_target_farther_away():
+    settings = Settings(_env_file=None)
+    rest = FakeRest()
+    service = TradingService(SimpleNamespace(rest=rest), FakeRepository(), settings)
+    original = _candidate()
+    original["metrics"]["15m"] = {
+        "atr": 1000,
+        "recent_low": 99000,
+        "recent_high": 101000,
+    }
+    plan = build_execution_plan(original, _info(), settings, 100000, risk_notional_usdt=40000)
+    await service._install_protection(plan, 4000, "BTC_USDT:long")
+    old_tp2 = plan["take_profits"][1]["price"]
+    record = {
+        "position_key": "BTC_USDT:long",
+        "current_size": 4000,
+        "plan": plan,
+    }
+
+    wider = _candidate()
+    wider["metrics"]["15m"] = {
+        "atr": 1200,
+        "recent_low": 99000,
+        "recent_high": 101000,
+    }
+    proposed = build_execution_plan(wider, _info(), settings, 100000, risk_notional_usdt=40000)
+    result = await service._apply_scan_protection_update(
+        record,
+        {"entry_price": "100000", "size": "4000"},
+        {"mark_price": "102500", "last": "102500"},
+        proposed,
+        _info(),
+    )
+    assert result["changed"] == []
+    assert plan["take_profits"][1]["price"] == old_tp2
+
+
+@pytest.mark.asyncio
 async def test_opposite_signal_closes_position_before_opening_new_direction():
     class ReverseRest(FakeRest):
         def __init__(self):
