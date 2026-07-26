@@ -1,0 +1,30 @@
+from datetime import datetime
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+
+class APIError(BaseModel):
+    code: str
+    message: str
+    request_id: str
+    details: dict[str, Any] = Field(default_factory=dict)
+
+
+class HealthResponse(BaseModel):
+    status: str
+    service: str
+    timestamp: datetime
+    database: str
+    gate_api: str
+    bitget_api: str = "not_configured"
+    discord: str
+    scheduler: str
+    trading: str = "disabled"
+    coinglass: str = "disabled"
+
+
+class PageInfo(BaseModel):
+    page: int = 1
+    page_size: int = 50
+    total: int = 0
