@@ -1,2 +1,0 @@
-"""CoinGlass market-data integration."""
-
